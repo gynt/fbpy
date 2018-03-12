@@ -10,56 +10,80 @@ access_manager = AccessManager()
 from fbpy.logger import *
 
 
-def get_posts_for_page(page_id, amount = 1, post_options=PostOptions(), reaction_options=ReactionOptions(), comment_options=CommentOptions(), subreaction_options=ReactionOptions(), subcomment_options=CommentOptions()):
+def fetch_posts(page_id, amount = 99999999, post_options=PostOptions(), reaction_options=ReactionOptions(), comment_options=CommentOptions(), subreaction_options=ReactionOptions(), subcomment_options=CommentOptions()):
     
-    url=build_url(page_id, post_options, reaction_options, comment_options, subreaction_options, subcomment_options)
+    url=build_url(page_id+"/posts", post_options, reaction_options, comment_options, subreaction_options, subcomment_options)
     result = access_manager.make_request(url)
 
-    posts = []
+    #posts = []
 
     if result.code != 200:
         raise Exception("Error: {}".format(result.code))
+
+    return result.content
     
+    #return posts
+
+def extract_posts(posts, amount = 99999999):
+    count = 0
+
     page=result.content
 
-    while len(posts) < amount:
+    while count < amount:
 
         for post in page["data"]:
             debug(post["id"])
             if "data" in post:
                 for key in post["data"].keys():
-                    complete(post["data"][key], access_manager) #["comments"]          
-            posts.append(post)
-            if len(posts) > amount - 1:
-                return posts
+                    complete(post["data"][key], access_manager) #["comments"]
+            count+=1
+            yield post
+            if count > amount - 1:
+                return
+            #posts.append(post)
+            #if len(posts) > amount - 1:
+                #return posts
 
         p = Page(page)
         if p.has_next():
             page = p.next(access_manager).page
         else:
             info("No more posts")
-            break
-    
-    return posts
+            break    
 
+import json
 
-def get_comments_for_post(post_id, post_options=PostOptions(), reaction_options=ReactionOptions(), comment_options=CommentOptions(), subreaction_options=ReactionOptions(), subcomment_options=CommentOptions()):
+def fetch_post(post_id, post_options=PostOptions(), reaction_options=ReactionOptions(), comment_options=CommentOptions(), subreaction_options=ReactionOptions(), subcomment_options=CommentOptions()):
     
-    url=build_url(post_id, post_options, reaction_options, comment_options, subreaction_options, subcomment_options, False)
+    url=build_url(post_id, post_options, reaction_options, comment_options, subreaction_options, subcomment_options)
     result = access_manager.make_request(url)
 
-    posts = []
+    if result.code != 200:
+        raise Exception("Error: " + result.code)
 
-    if result.code == 200:
-        page=result.content
+    return result.content
 
-        complete(page)
+def extract_comments_for_post(post, amount=99999999):
 
-        for post in page["comments"]["data"]:
-            if "data" in post:
-                for key in post["data"].keys():
-                    complete(post["data"][key]) #["comments"]          
-            posts.append(post)
-        return posts
-    else:
-        raise Exception("Error: " + result[0])
+    count = 0
+
+    page = post["comments"]
+
+    while count < amount:
+
+        for comment in page["data"]:
+            debug(comment["id"])
+            if "comments" in comment:
+                complete(comment["comments"], access_manager)
+                    
+            count+=1
+            yield comment
+            if count > amount - 1:
+                return
+
+        p = Page(page)
+        if p.has_next():
+            page = p.next(access_manager).page
+        else:
+            info("No more comments")
+            break    

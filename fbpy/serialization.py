@@ -91,3 +91,45 @@ def write_comments(comments_data):
             writer.writerow(final_dict)
     
     
+def level(result, dic, address=[], log=True):
+    for key in dic.keys():
+        value=dic[key]
+        address.append(key)
+        if isinstance(value, dict):
+            level(result, value, address)
+        elif isinstance(value, list):
+            if len(value) == 1:
+                level(result, value[0], address)
+            else:
+                if log:
+                    result["pager_log"]="key: {} actually had more than one value: {}".format(key, len(value))
+        else:
+            result["_".join(address)]=value
+        del address[-1]
+    return result
+
+
+def determine_fieldnames(levelled_posts):
+    fieldnames=[]
+    for post in levelled_posts:
+        fieldnames.extend(list(post.keys()))
+    return list(set(fieldnames))
+
+
+def format_subcomments(comment):
+    for subcomment in comment["comments"]["data"]:
+        subcomment["parent_comment"] = comment["id"]#.split("_")[1]
+        #subcomment["parent_post"] = comment["id"].split("_")[0]
+    comment["comments"]["data"] = comment["comments"]
+
+def format_comments(post):
+    for comment in post["comments"]["data"]:
+        comment["id"]=comment["id"].split("_")[1]
+        comment["parent_post"] = post["id"]#.split("_")[1]
+        #comment["parent_page"] = post["id"].split("_")[0]
+    post["comments"] = post["comments"]["data"]
+
+def format_post(post):
+    post["parent_page"] = post["id"].split("_")[0]
+    post["id"] = post["id"].split("_")[1]
+

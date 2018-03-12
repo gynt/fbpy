@@ -1,29 +1,7 @@
 from fbpy.logger import *
 
 
-def level(result, dic, address=[], log=True):
-    for key in dic.keys():
-        value=dic[key]
-        address.append(key)
-        if isinstance(value, dict):
-            level(result, value, address)
-        elif isinstance(value, list):
-            if len(value) == 1:
-                level(result, value[0], address)
-            else:
-                if log:
-                    result["pager_log"]="key: {} actually had more than one value: {}".format(key, len(value))
-        else:
-            result["_".join(address)]=value
-        del address[-1]
-    return result
 
-
-def determine_fieldnames(levelled_posts):
-    fieldnames=[]
-    for post in levelled_posts:
-        fieldnames.extend(list(post.keys()))
-    return list(set(fieldnames))
 
 
 def complete(data_paging, access_manager):
@@ -60,11 +38,9 @@ class Page(object):
         self.page = page
         if not isinstance(page, dict):
             raise Exception()
-        if not "paging" in page:
-            raise Exception()
 
     def has_next(self):
-        return "paging" in self.page
+        return "paging" in self.page and "next" in self.page["paging"]
 
     def next(self, access_manager):
         req = access_manager.make_request(self.page["paging"]["next"])
