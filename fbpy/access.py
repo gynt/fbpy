@@ -4,6 +4,8 @@ import urllib
 import urllib.request as R
 import urllib.error as E
 
+from fbpy.logger import *
+
 class Result(object):
 
     def __init__(self, code, content):
@@ -32,6 +34,7 @@ class AccessManager(object):
 
     def make_request(self, url):
         nurl = self.build_url(url)
+        debug("Retrieving url: {}".format(nurl))
 
         conn = None
         error = None
@@ -51,16 +54,21 @@ class AccessManager(object):
         if error.code == 400:            
             error = json.loads(error.read())
             if error["error"]["code"] <= 341:
-                print(error)
+                #print(error)
+                raise Exception("CODE:{}. {}".format(error["error"]["code"], json.dumps(error)))
                 self.token_manager.on_timeout()
                 #Try again
                 return self.make_request(url)
             else:
                 raise Exception(json.dumps(error))
+
+        #elif error.code == 200:
+            #raise Exception("DOES NOT EXIST: {}".format(error.read()))
         else:
             error = json.loads(error.read())
             if error["error"]["code"] <= 341:
                 print(error)
+                raise Exception("CODE:{}. {}".format(error["error"]["code"], json.dumps(error)))
                 self.token_manager.on_timeout()
                 #Try again
                 return self.make_request(url)

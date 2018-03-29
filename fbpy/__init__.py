@@ -32,7 +32,7 @@ def extract_posts(posts, amount = 99999999):
     while count < amount:
 
         for post in page["data"]:
-            debug(post["id"])
+            #debug(post["id"])
             if "data" in post:
                 for key in post["data"].keys():
                     complete(post["data"][key], access_manager) #["comments"]
@@ -48,7 +48,7 @@ def extract_posts(posts, amount = 99999999):
         if p.has_next():
             page = p.next(access_manager).page
         else:
-            info("No more posts")
+            debug("No more posts")
             break    
 
 import json
@@ -63,7 +63,7 @@ def fetch_post(post_id, post_options=PostOptions(), reaction_options=ReactionOpt
 
     return result.content
 
-def extract_comments_for_post(post, amount=99999999):
+def extract_comments_for_post(post, amount=99999999, include_subcomments=True):
 
     count = 0
 
@@ -72,9 +72,10 @@ def extract_comments_for_post(post, amount=99999999):
     while count < amount:
 
         for comment in page["data"]:
-            debug(comment["id"])
+            #debug(comment["id"])
             if "comments" in comment:
-                complete(comment["comments"], access_manager)
+                #complete(comment["comments"], access_manager)
+                comment["comments"]=list(extract_subcomments_for_comment(comment))
                     
             count+=1
             yield comment
@@ -85,5 +86,30 @@ def extract_comments_for_post(post, amount=99999999):
         if p.has_next():
             page = p.next(access_manager).page
         else:
-            info("No more comments")
+            debug("No more comments")
             break    
+
+def extract_subcomments_for_comment(post, amount=99999999):
+    
+    count = 0
+
+    page = post["comments"]
+
+    while count < amount:
+
+        for comment in page["data"]:
+            #debug(comment["id"])
+            #if "comments" in comment:
+                #complete(comment["comments"], access_manager)
+                    
+            count+=1
+            yield comment
+            if count > amount - 1:
+                return
+
+        p = Page(page)
+        if p.has_next():
+            page = p.next(access_manager).page
+        else:
+            debug("No more comments")
+            break  
